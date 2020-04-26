@@ -42,12 +42,24 @@ body {
     background-color: rgb(105, 117, 78);
 }
 
+.even-square.possible-attack {
+    background-color: rgb(201, 104, 66);
+}
+
+.odd-square.possible-attack {
+    background-color: rgb(136, 63, 50);
+}
+
 .fas{
     font-size: 32px;
 }
 
 .fas.black {
     color: #000;
+}
+
+.fas.white {
+    color: #fff;
 }
 
 .active-piece {
