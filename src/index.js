@@ -2,31 +2,25 @@ const squares = document.querySelectorAll('.square');
 const boardWidth = 8;
 const playerColor = 'white';
 const boardState = {};
+const coordsToSquareElem = {};
 let activePiece;
 let activeCoords;
 
-const coordsToSquareElem = {};
 const getCoords = squareElem => [parseInt(squareElem.getAttribute('xcoord')), parseInt(squareElem.getAttribute('ycoord'))];
 const getColor = piece => piece.classList.contains('white') ? 'white' : 'black';
 const getPiece = square => square.children[0];
-
-const distance = (p1, p2) => {
-    return Math.max(Math.abs(p1[0] - p2[0]), Math.abs(p1[1] - p2[1]));
-}
-
+const distance = (p1, p2) => Math.max(Math.abs(p1[0] - p2[0]), Math.abs(p1[1] - p2[1]));
 const twoPointsOnHorizontal = (p1, p2) => p1[1] === p2[1] ? true : false;
 const twoPointsOnVertical = (p1, p2) => p1[0] === p2[0] ? true : false;
 const twoPointsOnDiagonal = (p1, p2) => (Math.abs(p1[0] - p2[0]) === Math.abs(p1[1] - p2[1])) ? true : false;
 
 const threePointsMakeLine = (p1, p2, p3) => {
-    if (twoPointsOnHorizontal(p1, p2) && twoPointsOnHorizontal(p2, p3) && twoPointsOnHorizontal(p1, p3)) {
+    if ((twoPointsOnHorizontal(p1, p2) && twoPointsOnHorizontal(p1, p3)) ||
+        (twoPointsOnDiagonal(p1, p2) && twoPointsOnDiagonal(p2, p3) && twoPointsOnDiagonal(p1, p3))) {
         return p1[0] < p2[0] && p2[0] < p3[0] || p1[0] > p2[0] && p2[0] > p3[0];
     }
-    if (twoPointsOnVertical(p1, p2) && twoPointsOnVertical(p2, p3) && twoPointsOnVertical(p1, p3)) {
+    if (twoPointsOnVertical(p1, p2) && twoPointsOnVertical(p1, p3)) {
         return p1[1] < p2[1] && p2[1] < p3[1] || p1[1] > p2[1] && p2[1] > p3[1];;
-    }
-    if (twoPointsOnDiagonal(p1, p2) && twoPointsOnDiagonal(p2, p3) && twoPointsOnDiagonal(p1, p3)) {
-        return p1[0] < p2[0] && p2[0] < p3[0] || p1[0] > p2[0] && p2[0] > p3[0];
     }
     return false;
 }
@@ -50,16 +44,6 @@ const moveDeltas = {
         [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7]
 
     ],
-    queen: [
-        [-1, 0], [-2, 0], [-3, 0], [-4, 0], [-5, 0], [-6, 0], [-7, 0],
-        [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0],
-        [0, -1], [0, -2], [0, -3], [0, -4], [0, -5], [0, -6], [0, -7],
-        [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7],
-        [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7],
-        [1, -1], [2, -2], [3, -3], [4, -4], [5, -5], [6, -6], [7, -7],
-        [-1, 1], [-2, 2], [-3, 3], [-4, 4], [-5, 5], [-6, 6], [-7, 7],
-        [-1, -1], [-2, -2], [-3, -3], [-4, -4], [-5, -5], [-6, -6], [-7, -7]
-    ],
     king: [
         [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]
     ],
@@ -82,6 +66,8 @@ const moveDeltas = {
         [0, 1], [0, 2]
     ]
 }
+moveDeltas['queen'] = moveDeltas['rook'].concat(moveDeltas['bishop']);
+const pawnAttacks = { bottom_pawn: [[-1, -1], [1, -1]], top_pawn: [[-1, 1], [1, 1]], bottom_pawn_first: [[-1, -1], [1, -1]], top_pawn_first: [[-1, 1], [1, 1]] }
 
 const pieceType = piece => {
     const classArray = [...piece.classList];
@@ -135,13 +121,9 @@ const getPossibleMoves = piece => {
             return validSquare
         });
 
-    if (pieceType(piece).includes('bottom_pawn')) {
-        attackMoves = [arrayAdd(currentCoords, [-1, -1]), arrayAdd(currentCoords, [1, -1])]
-            .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
-    }
-
-    if (pieceType(piece).includes('top_pawn')) {
-        attackMoves = [arrayAdd(currentCoords, [-1, 1]), arrayAdd(currentCoords, [1, 1])]
+    if (pieceType(piece).includes('pawn')) {
+        console.log(pieceType(piece));
+        attackMoves = pawnAttacks[pieceType(piece)].map(delta => arrayAdd(currentCoords, delta))
             .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
     }
 
@@ -214,7 +196,7 @@ window.addEventListener('click', e => {
             square.classList.remove('possible-move');
             square.classList.remove('possible-attack');
         })
-    } else if (e.target.classList.contains('piece')) {
+    } else if (elementContainsClass(e.target, 'piece')) {
         // Activate piece
         activePiece = e.target;
         activePiece.classList.add('active-piece');
