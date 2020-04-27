@@ -74,6 +74,12 @@ const moveDeltas = {
     ],
     top_pawn: [
         [0, 1]
+    ],
+    bottom_pawn_first: [
+        [0, -1], [0, -2]
+    ],
+    top_pawn_first: [
+        [0, 1], [0, 2]
     ]
 }
 
@@ -84,9 +90,17 @@ const pieceType = piece => {
     if (rawType === 'pawn') {
         const isWhite = classArray.includes('white');
         if ((isWhite && playerColor === 'white') || (!isWhite && playerColor === 'black')) {
-            return 'bottom_pawn'
+            if (getCoords(piece.parentElement)[1] === 6) {
+                return 'bottom_pawn_first'
+            } else {
+                return 'bottom_pawn'
+            }
         } else {
-            return 'top_pawn'
+            if (getCoords(piece.parentElement)[1] === 1) {
+                return 'top_pawn_first'
+            } else {
+                return 'top_pawn'
+            }
         }
     } else {
         return rawType;
@@ -94,41 +108,46 @@ const pieceType = piece => {
 }
 
 const getPossibleMoves = piece => {
-    const piecesInPath = [];
-    const attackMoves = [];
+    let attackMoves = [];
     const currentCoords = getCoords(piece.parentElement);
     const neutralMoves = moveDeltas[pieceType(piece)]
-        .map(delta => {
-            return arrayAdd(currentCoords, delta);
-        })
+        .map(delta => arrayAdd(currentCoords, delta))
         .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords))
-        .sort((a, b) => {
-            return distance(currentCoords, a) - distance(currentCoords, b);
-        })
+        .sort((a, b) => distance(currentCoords, a) - distance(currentCoords, b))
         .filter(square => {
             if (getPiece(coordsToSquareElem[square])) {
                 let addAttack = true;
-                piecesInPath.forEach(pieceInPath => {
-                    if (threePointsMakeLine(square, pieceInPath, currentCoords)) {
+                attackMoves.forEach(possibleAttack => {
+                    if (threePointsMakeLine(square, possibleAttack, currentCoords)) {
                         addAttack = false;
                     }
                 })
                 addAttack ? attackMoves.push(square) : false;
-                piecesInPath.push(square);
                 return false;
             }
 
             let validSquare = true
-            piecesInPath.forEach(pieceInPath => {
+            attackMoves.forEach(pieceInPath => {
                 if (threePointsMakeLine(square, pieceInPath, currentCoords)) {
                     validSquare = false;
                 }
             })
             return validSquare
         });
+
+    if (pieceType(piece).includes('bottom_pawn')) {
+        attackMoves = [arrayAdd(currentCoords, [-1, -1]), arrayAdd(currentCoords, [1, -1])]
+            .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
+    }
+
+    if (pieceType(piece).includes('top_pawn')) {
+        attackMoves = [arrayAdd(currentCoords, [-1, 1]), arrayAdd(currentCoords, [1, 1])]
+            .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
+    }
+
     return {
         neutralMoves: neutralMoves,
-        attackMoves: attackMoves.filter(possibleAttack => boardState[possibleAttack] !== getColor(piece))
+        attackMoves: attackMoves.filter(possibleAttack => boardState[possibleAttack] && boardState[possibleAttack] !== getColor(piece))
     }
 }
 
