@@ -174,33 +174,36 @@ const updateBoardState = () => {
     })
 }
 
+const elementContainsClass = (element, clss) => {
+    if (element.classList.contains(clss)) {
+        return element;
+    } else if (element.parentElement.classList.contains(clss)) {
+        return element.parentElement;
+    } else {
+        return false;
+    }
+}
+
 window.addEventListener('click', e => {
     if (activePiece) {
         // Deactive piece before possibly moving it
         activePiece.classList.remove('active-piece');
 
-        if (e.target.classList.contains('possible-move')) {
+        //let nextSquare;
+        const nextSquare = elementContainsClass(e.target, 'possible-move') || elementContainsClass(e.target, 'possible-attack');
+        if (nextSquare) {
             // Remove piece from current location
             coordsToSquareElem[activeCoords].innerHTML = '';
 
-            // Add piece to new location
-            const nextSquare = e.target;
+            // Replace new square's contents with piece
             nextSquare.innerHTML = activePiece.outerHTML;
             activeCoords = getCoords(nextSquare);
 
-            updateBoardState()
-        } else if (e.target.classList.contains('possible-attack') ||
-            e.target.parentElement.classList.contains('possible-attack')) {
-            // Remove piece from current location
-            coordsToSquareElem[activeCoords].innerHTML = '';
-
-            // Remove attacked piece
-            const nextSquare = e.target.classList.contains('possible-attack') ? e.target : e.target.parentElement;
-            coordsToSquareElem[getCoords(nextSquare)].innerHTML = '';
-
-            // Add piece to new location
-            nextSquare.innerHTML = activePiece.outerHTML;
-            activeCoords = getCoords(nextSquare);
+            const nextPiece = nextSquare.children[0];
+            if (nextPiece.classList.contains('fa-chess-pawn') && [0, 7].includes(getCoords(nextSquare)[1])) {
+                nextPiece.classList.remove('fa-chess-pawn');
+                nextPiece.classList.add('fa-chess-queen');
+            }
 
             updateBoardState()
         }
@@ -208,30 +211,20 @@ window.addEventListener('click', e => {
         // Clear active piece and remove possible move classes
         activePiece = null;
         squares.forEach(square => {
-            square.classList.remove('possible-move')
-            square.classList.remove('possible-attack')
+            square.classList.remove('possible-move');
+            square.classList.remove('possible-attack');
         })
     } else if (e.target.classList.contains('piece')) {
-        const piece = e.target;
-
         // Activate piece
-        activePiece = piece;
-        piece.classList.add('active-piece');
-        activeCoords = getCoords(piece.parentElement);
+        activePiece = e.target;
+        activePiece.classList.add('active-piece');
+        activeCoords = getCoords(activePiece.parentElement);
 
-        moves = getPossibleMoves(piece);
-
-        // Highlight possible moves for piece
-        moves.neutralMoves.forEach(moveCoords => {
-            coordsToSquareElem[moveCoords].classList.add('possible-move');
-        })
-
-        // Highlight possible attacks for piece
-        moves.attackMoves.forEach(moveCoords => {
-            coordsToSquareElem[moveCoords].classList.add('possible-attack');
-        })
+        // Highlight possible moves and attacks for piece
+        moves = getPossibleMoves(activePiece);
+        moves.neutralMoves.forEach(moveCoords => coordsToSquareElem[moveCoords].classList.add('possible-move'));
+        moves.attackMoves.forEach(moveCoords => coordsToSquareElem[moveCoords].classList.add('possible-attack'));
     }
 })
-
 
 initialSetup()
