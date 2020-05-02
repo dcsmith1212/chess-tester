@@ -4,14 +4,96 @@
 
 body {
     margin: 0;
-}
-
-.board {
-    margin-top: 50px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.game-container {
+    display: flex;
+    margin-top: 50px;
+    background: rgb(117, 100, 78);
+    padding: 10px 20px;
+    position: relative;
+}
+
+.turn-indicator {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    background-color: white;
+    width: 35px;
+    height: 35px;
+    z-index: 99;
+    border-radius: 50%;
+}
+
+.taken-pieces-container {
+    display: flex;
+    flex-direction: column;
+    align-items: column;
+    justify-content: center;
+    width: 65px;
+}
+
+.taken-piece {
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.taken-piece.black {
+    color: #000;
+}
+
+.taken-piece.white {
+    color: #fff;
+}
+
+.taken-piece span {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.vert-coords-container {
+    display: flex;
+    flex-direction: column;
+    width: 20px;
+    margin-left: 20px;
+}
+
+.coords {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vert {
+    height: 45px;
+}
+
+.horiz {
+    width: 45px;
+}
+
+.blank {
+    height: 20px;
+}
+
+.horiz-coords-container {
+    display: flex;
+    height: 20px;
+}
+
+.board {
+    margin-right: 40px;
 }
 
 .row {

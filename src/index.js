@@ -1,10 +1,31 @@
 const squares = document.querySelectorAll('.square');
+const turnIndicator = document.querySelector('.turn-indicator');
+
 const boardWidth = 8;
 const playerColor = 'white';
 const boardState = {};
 const coordsToSquareElem = {};
 let activePiece;
 let activeCoords;
+let currentTurn = 'white';
+let takenPieces = {
+    white: {},
+    black: {}
+}
+
+const unpackTakenPiecesContainers = nodeList => {
+    const containers = {};
+    nodeList.forEach(elem => {
+        elem.classList.forEach(clss => {
+            if (['white', 'black'].includes(clss)) {
+                containers[clss] = elem;
+            }
+        })
+    })
+    return containers;
+}
+
+const takenPiecesContainers = unpackTakenPiecesContainers(document.querySelectorAll('.taken-pieces-container'));
 
 const getCoords = squareElem => [parseInt(squareElem.getAttribute('xcoord')), parseInt(squareElem.getAttribute('ycoord'))];
 const getColor = piece => piece.classList.contains('white') ? 'white' : 'black';
@@ -69,10 +90,15 @@ const moveDeltas = {
 moveDeltas['queen'] = moveDeltas['rook'].concat(moveDeltas['bishop']);
 const pawnAttacks = { bottom_pawn: [[-1, -1], [1, -1]], top_pawn: [[-1, 1], [1, 1]], bottom_pawn_first: [[-1, -1], [1, -1]], top_pawn_first: [[-1, 1], [1, 1]] }
 
-const pieceType = piece => {
+const pieceRawType = piece => {
     const classArray = [...piece.classList];
     const pieceTypeClass = classArray.filter(cl => cl.includes('fa-chess'))[0];
-    const rawType = pieceTypeClass.split('-')[2];
+    return pieceTypeClass.split('-')[2];
+}
+
+const pieceType = piece => {
+    const rawType = pieceRawType(piece);
+    const classArray = [...piece.classList];
     if (rawType === 'pawn') {
         const isWhite = classArray.includes('white');
         if ((isWhite && playerColor === 'white') || (!isWhite && playerColor === 'black')) {
@@ -122,7 +148,6 @@ const getPossibleMoves = piece => {
         });
 
     if (pieceType(piece).includes('pawn')) {
-        console.log(pieceType(piece));
         attackMoves = pawnAttacks[pieceType(piece)].map(delta => arrayAdd(currentCoords, delta))
             .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
     }
@@ -130,6 +155,26 @@ const getPossibleMoves = piece => {
     return {
         neutralMoves: neutralMoves,
         attackMoves: attackMoves.filter(possibleAttack => boardState[possibleAttack] && boardState[possibleAttack] !== getColor(piece))
+    }
+}
+
+const updateTakePiecesElements = () => {
+    for (const color in takenPiecesContainers) {
+        const elem = takenPiecesContainers[color];
+        elem.innerHTML = ''
+        const pieces = takenPieces[color];
+        for (piece in pieces) {
+            const takenPiecesHTML = `
+            <div class="taken-piece ${color}">
+                <i class="fas fa-chess-${piece} piece ${color}"></i>
+                <div>
+                    <i class="fas fa-times fa-sm"></i>
+                    <span>${pieces[piece]}</span>
+                </div>
+            </div>
+            `
+            elem.innerHTML += takenPiecesHTML;
+        }
     }
 }
 
@@ -156,6 +201,11 @@ const updateBoardState = () => {
     })
 }
 
+const checkKingInCheck = () => {
+
+    console.log(`current turn = ${currentTurn}`);
+}
+
 const elementContainsClass = (element, clss) => {
     if (element.classList.contains(clss)) {
         return element;
@@ -171,13 +221,20 @@ window.addEventListener('click', e => {
         // Deactive piece before possibly moving it
         activePiece.classList.remove('active-piece');
 
-        //let nextSquare;
         const nextSquare = elementContainsClass(e.target, 'possible-move') || elementContainsClass(e.target, 'possible-attack');
         if (nextSquare) {
             // Remove piece from current location
             coordsToSquareElem[activeCoords].innerHTML = '';
 
             // Replace new square's contents with piece
+            const existingPiece = nextSquare.children[0];
+            if (existingPiece) {
+                const color = getColor(existingPiece);
+                const type = pieceRawType(existingPiece);
+                takenPieces[color][type] = ++takenPieces[color][type] || 1;
+                updateTakePiecesElements();
+            }
+
             nextSquare.innerHTML = activePiece.outerHTML;
             activeCoords = getCoords(nextSquare);
 
@@ -188,6 +245,8 @@ window.addEventListener('click', e => {
             }
 
             updateBoardState()
+            currentTurn = currentTurn === 'white' ? 'black' : 'white';
+            turnIndicator.style.background = currentTurn;
         }
 
         // Clear active piece and remove possible move classes
@@ -196,7 +255,12 @@ window.addEventListener('click', e => {
             square.classList.remove('possible-move');
             square.classList.remove('possible-attack');
         })
-    } else if (elementContainsClass(e.target, 'piece')) {
+
+        // Check if king is in check
+        checkKingInCheck();
+    } else if (elementContainsClass(e.target, 'piece') &&
+        elementContainsClass(e.target, currentTurn)) {
+
         // Activate piece
         activePiece = e.target;
         activePiece.classList.add('active-piece');
