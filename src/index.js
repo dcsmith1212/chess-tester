@@ -1,5 +1,10 @@
 const squares = document.querySelectorAll('.square');
 const turnIndicator = document.querySelector('.turn-indicator');
+const kingElems = {
+    white: document.querySelector('.fa-chess-king.white'),
+    black: document.querySelector('.fa-chess-king.black')
+}
+const board = document.querySelector('.board');
 
 const boardWidth = 8;
 const playerColor = 'white';
@@ -7,7 +12,7 @@ const boardState = {};
 const coordsToSquareElem = {};
 let activePiece;
 let activeCoords;
-let currentTurn = 'white';
+let currentColor = 'white';
 let takenPieces = {
     white: {},
     black: {}
@@ -201,9 +206,32 @@ const updateBoardState = () => {
     })
 }
 
-const checkKingInCheck = () => {
+const arraysEqual = (a, b) => {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
 
-    console.log(`current turn = ${currentTurn}`);
+    for (var i = 0; i < a.length; ++i) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+const kingInCheck = () => {
+    const kingCoords = getCoords(kingElems[currentColor].parentElement);
+    const otherColor = currentColor === 'white' ? 'black' : 'white';
+    let checkSquare = false;
+
+    board.querySelectorAll(`.piece.${otherColor}`).forEach(piece => {
+        getPossibleMoves(piece).attackMoves.forEach(attackMove => {
+            if (arraysEqual(attackMove, kingCoords)) {
+                checkSquare = kingElems[currentColor].parentElement;
+                return;
+            }
+        })
+    })
+
+    return checkSquare;
 }
 
 const elementContainsClass = (element, clss) => {
@@ -217,6 +245,8 @@ const elementContainsClass = (element, clss) => {
 }
 
 window.addEventListener('click', e => {
+    const squareInCheck = document.querySelector('.check');
+
     if (activePiece) {
         // Deactive piece before possibly moving it
         activePiece.classList.remove('active-piece');
@@ -245,8 +275,14 @@ window.addEventListener('click', e => {
             }
 
             updateBoardState()
-            currentTurn = currentTurn === 'white' ? 'black' : 'white';
-            turnIndicator.style.background = currentTurn;
+
+            // Change current color
+            currentColor = currentColor === 'white' ? 'black' : 'white';
+            turnIndicator.style.background = currentColor;
+
+            // Get rid of square with check color, if it exists
+            const checkedSquare = document.querySelector('.check');
+            if (checkedSquare) checkedSquare.classList.remove('check');
         }
 
         // Clear active piece and remove possible move classes
@@ -257,10 +293,12 @@ window.addEventListener('click', e => {
         })
 
         // Check if king is in check
-        checkKingInCheck();
+        const checkSquare = kingInCheck();
+        if (checkSquare) {
+            checkSquare.classList.add('check');
+        }
     } else if (elementContainsClass(e.target, 'piece') &&
-        elementContainsClass(e.target, currentTurn)) {
-
+        elementContainsClass(e.target, currentColor)) {
         // Activate piece
         activePiece = e.target;
         activePiece.classList.add('active-piece');

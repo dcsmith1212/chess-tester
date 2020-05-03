@@ -132,6 +132,10 @@ body {
     background-color: rgb(136, 63, 50);
 }
 
+.check {
+    background-color: rgb(255, 136, 0);
+}
+
 .fas{
     font-size: 32px;
 }
