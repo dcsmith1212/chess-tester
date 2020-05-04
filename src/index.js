@@ -1,3 +1,6 @@
+import { getValidMoves, pieceRawType } from './piece'
+import Piece from './piece-obj'
+
 const squares = document.querySelectorAll('.square');
 const turnIndicator = document.querySelector('.turn-indicator');
 const kingElems = {
@@ -6,8 +9,8 @@ const kingElems = {
 }
 const board = document.querySelector('.board');
 
-const boardWidth = 8;
 const playerColor = 'white';
+const boardWidth = 8;
 const boardState = {};
 const coordsToSquareElem = {};
 let activePiece;
@@ -17,6 +20,9 @@ let takenPieces = {
     white: {},
     black: {}
 }
+
+const validCoords = coords => coordsToSquareElem.hasOwnProperty(coords);
+const pieceOnCoords = coords => boardState[coords];
 
 const unpackTakenPiecesContainers = nodeList => {
     const containers = {};
@@ -35,140 +41,14 @@ const takenPiecesContainers = unpackTakenPiecesContainers(document.querySelector
 const getCoords = squareElem => [parseInt(squareElem.getAttribute('xcoord')), parseInt(squareElem.getAttribute('ycoord'))];
 const getColor = piece => piece.classList.contains('white') ? 'white' : 'black';
 const getPiece = square => square.children[0];
-const distance = (p1, p2) => Math.max(Math.abs(p1[0] - p2[0]), Math.abs(p1[1] - p2[1]));
-const twoPointsOnHorizontal = (p1, p2) => p1[1] === p2[1] ? true : false;
-const twoPointsOnVertical = (p1, p2) => p1[0] === p2[0] ? true : false;
-const twoPointsOnDiagonal = (p1, p2) => (Math.abs(p1[0] - p2[0]) === Math.abs(p1[1] - p2[1])) ? true : false;
 
-const threePointsMakeLine = (p1, p2, p3) => {
-    if ((twoPointsOnHorizontal(p1, p2) && twoPointsOnHorizontal(p1, p3)) ||
-        (twoPointsOnDiagonal(p1, p2) && twoPointsOnDiagonal(p2, p3) && twoPointsOnDiagonal(p1, p3))) {
-        return p1[0] < p2[0] && p2[0] < p3[0] || p1[0] > p2[0] && p2[0] > p3[0];
-    }
-    if (twoPointsOnVertical(p1, p2) && twoPointsOnVertical(p1, p3)) {
-        return p1[1] < p2[1] && p2[1] < p3[1] || p1[1] > p2[1] && p2[1] > p3[1];;
-    }
-    return false;
-}
-
-const arrayAdd = (arr1, arr2) => {
-    const sum = [];
-    for (let i = 0; i < arr1.length; i += 1) {
-        sum[i] = arr1[i] + arr2[i];
-    }
-    return sum;
-}
-
-const moveDeltas = {
-    knight: [
-        [2, 1], [2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2], [-2, 1], [-2, -1]
-    ],
-    rook: [
-        [-1, 0], [-2, 0], [-3, 0], [-4, 0], [-5, 0], [-6, 0], [-7, 0],
-        [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0],
-        [0, -1], [0, -2], [0, -3], [0, -4], [0, -5], [0, -6], [0, -7],
-        [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7]
-
-    ],
-    king: [
-        [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]
-    ],
-    bishop: [
-        [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7],
-        [1, -1], [2, -2], [3, -3], [4, -4], [5, -5], [6, -6], [7, -7],
-        [-1, 1], [-2, 2], [-3, 3], [-4, 4], [-5, 5], [-6, 6], [-7, 7],
-        [-1, -1], [-2, -2], [-3, -3], [-4, -4], [-5, -5], [-6, -6], [-7, -7]
-    ],
-    bottom_pawn: [
-        [0, -1]
-    ],
-    top_pawn: [
-        [0, 1]
-    ],
-    bottom_pawn_first: [
-        [0, -1], [0, -2]
-    ],
-    top_pawn_first: [
-        [0, 1], [0, 2]
-    ]
-}
-moveDeltas['queen'] = moveDeltas['rook'].concat(moveDeltas['bishop']);
-const pawnAttacks = { bottom_pawn: [[-1, -1], [1, -1]], top_pawn: [[-1, 1], [1, 1]], bottom_pawn_first: [[-1, -1], [1, -1]], top_pawn_first: [[-1, 1], [1, 1]] }
-
-const pieceRawType = piece => {
-    const classArray = [...piece.classList];
-    const pieceTypeClass = classArray.filter(cl => cl.includes('fa-chess'))[0];
-    return pieceTypeClass.split('-')[2];
-}
-
-const pieceType = piece => {
-    const rawType = pieceRawType(piece);
-    const classArray = [...piece.classList];
-    if (rawType === 'pawn') {
-        const isWhite = classArray.includes('white');
-        if ((isWhite && playerColor === 'white') || (!isWhite && playerColor === 'black')) {
-            if (getCoords(piece.parentElement)[1] === 6) {
-                return 'bottom_pawn_first'
-            } else {
-                return 'bottom_pawn'
-            }
-        } else {
-            if (getCoords(piece.parentElement)[1] === 1) {
-                return 'top_pawn_first'
-            } else {
-                return 'top_pawn'
-            }
-        }
-    } else {
-        return rawType;
-    }
-}
-
-const getPossibleMoves = piece => {
-    let attackMoves = [];
-    const currentCoords = getCoords(piece.parentElement);
-    const neutralMoves = moveDeltas[pieceType(piece)]
-        .map(delta => arrayAdd(currentCoords, delta))
-        .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords))
-        .sort((a, b) => distance(currentCoords, a) - distance(currentCoords, b))
-        .filter(square => {
-            if (getPiece(coordsToSquareElem[square])) {
-                let addAttack = true;
-                attackMoves.forEach(possibleAttack => {
-                    if (threePointsMakeLine(square, possibleAttack, currentCoords)) {
-                        addAttack = false;
-                    }
-                })
-                addAttack ? attackMoves.push(square) : false;
-                return false;
-            }
-
-            let validSquare = true
-            attackMoves.forEach(pieceInPath => {
-                if (threePointsMakeLine(square, pieceInPath, currentCoords)) {
-                    validSquare = false;
-                }
-            })
-            return validSquare
-        });
-
-    if (pieceType(piece).includes('pawn')) {
-        attackMoves = pawnAttacks[pieceType(piece)].map(delta => arrayAdd(currentCoords, delta))
-            .filter(currentCoords => coordsToSquareElem.hasOwnProperty(currentCoords));
-    }
-
-    return {
-        neutralMoves: neutralMoves,
-        attackMoves: attackMoves.filter(possibleAttack => boardState[possibleAttack] && boardState[possibleAttack] !== getColor(piece))
-    }
-}
 
 const updateTakePiecesElements = () => {
     for (const color in takenPiecesContainers) {
         const elem = takenPiecesContainers[color];
         elem.innerHTML = ''
         const pieces = takenPieces[color];
-        for (piece in pieces) {
+        for (const piece in pieces) {
             const takenPiecesHTML = `
             <div class="taken-piece ${color}">
                 <i class="fas fa-chess-${piece} piece ${color}"></i>
@@ -185,7 +65,7 @@ const updateTakePiecesElements = () => {
 
 const initialSetup = () => {
     squares.forEach((square, squareIndex) => {
-        const xCoord = squareIndex % 8;
+        const xCoord = squareIndex % boardWidth;
         const yCoord = Math.floor(squareIndex / boardWidth);
         const coords = [xCoord, yCoord];
         square.classList.add((xCoord + yCoord) % 2 === 0 ? 'even-square' : 'odd-square')
@@ -223,7 +103,7 @@ const kingInCheck = () => {
     let checkSquare = false;
 
     board.querySelectorAll(`.piece.${otherColor}`).forEach(piece => {
-        getPossibleMoves(piece).attackMoves.forEach(attackMove => {
+        getValidMoves(piece).attackMoves.forEach(attackMove => {
             if (arraysEqual(attackMove, kingCoords)) {
                 checkSquare = kingElems[currentColor].parentElement;
                 return;
@@ -244,6 +124,19 @@ const elementContainsClass = (element, clss) => {
     }
 }
 
+const checkPawnPromotion = square => {
+    const piece = getPiece(square);
+    if (piece.classList.contains('fa-chess-pawn') && [0, 7].includes(getCoords(square)[1])) {
+        piece.classList.remove('fa-chess-pawn');
+        piece.classList.add('fa-chess-queen');
+    }
+}
+
+const toggleActiveColor = () => {
+    currentColor = currentColor === 'white' ? 'black' : 'white';
+    turnIndicator.style.background = currentColor;
+}
+
 window.addEventListener('click', e => {
     const squareInCheck = document.querySelector('.check');
 
@@ -257,7 +150,7 @@ window.addEventListener('click', e => {
             coordsToSquareElem[activeCoords].innerHTML = '';
 
             // Replace new square's contents with piece
-            const existingPiece = nextSquare.children[0];
+            const existingPiece = getPiece(nextSquare);
             if (existingPiece) {
                 const color = getColor(existingPiece);
                 const type = pieceRawType(existingPiece);
@@ -268,17 +161,9 @@ window.addEventListener('click', e => {
             nextSquare.innerHTML = activePiece.outerHTML;
             activeCoords = getCoords(nextSquare);
 
-            const nextPiece = nextSquare.children[0];
-            if (nextPiece.classList.contains('fa-chess-pawn') && [0, 7].includes(getCoords(nextSquare)[1])) {
-                nextPiece.classList.remove('fa-chess-pawn');
-                nextPiece.classList.add('fa-chess-queen');
-            }
-
-            updateBoardState()
-
-            // Change current color
-            currentColor = currentColor === 'white' ? 'black' : 'white';
-            turnIndicator.style.background = currentColor;
+            checkPawnPromotion(nextSquare);
+            updateBoardState();
+            toggleActiveColor();
 
             // Get rid of square with check color, if it exists
             const checkedSquare = document.querySelector('.check');
@@ -293,10 +178,10 @@ window.addEventListener('click', e => {
         })
 
         // Check if king is in check
-        const checkSquare = kingInCheck();
-        if (checkSquare) {
-            checkSquare.classList.add('check');
-        }
+        // const checkSquare = kingInCheck();
+        // if (checkSquare) {
+        //     checkSquare.classList.add('check');
+        // }
     } else if (elementContainsClass(e.target, 'piece') &&
         elementContainsClass(e.target, currentColor)) {
         // Activate piece
@@ -305,10 +190,12 @@ window.addEventListener('click', e => {
         activeCoords = getCoords(activePiece.parentElement);
 
         // Highlight possible moves and attacks for piece
-        moves = getPossibleMoves(activePiece);
+        const moves = getValidMoves(activePiece);
         moves.neutralMoves.forEach(moveCoords => coordsToSquareElem[moveCoords].classList.add('possible-move'));
         moves.attackMoves.forEach(moveCoords => coordsToSquareElem[moveCoords].classList.add('possible-attack'));
     }
 })
 
 initialSetup()
+
+export { getCoords, getColor, boardState, playerColor, validCoords, pieceOnCoords }
