@@ -1,28 +1,50 @@
-import { getCoords, getColor, pieceOnCoords } from './index'
-import { squareBlockedByPieceInPath, getPossibleMoves, getPossiblePawnAttacks, pieceType, pieceRawType } from './helper-fns'
+import { squareBlockedByPieceInPath } from './geometry'
+import { board } from './index'
 
-const getValidMoves = piece => {
-    let piecesInPath = [];
-    const currentCoords = getCoords(piece.parentElement);
-    const neutralMoves = getPossibleMoves(pieceType(piece), currentCoords)
-        .filter(square => {
-            if (squareBlockedByPieceInPath(square, currentCoords, piecesInPath)) {
-                return false;
-            } else {
-                if (pieceOnCoords(square)) {
-                    piecesInPath.push(square);
-                    return false;
-                }
-                return true;
-            }
-        });
-
-    if (pieceRawType(piece) === 'pawn') piecesInPath = getPossiblePawnAttacks(pieceType(piece), currentCoords);
-
-    return {
-        neutralMoves: neutralMoves,
-        attackMoves: piecesInPath.filter(possibleAttack => pieceOnCoords(possibleAttack) !== getColor(piece))
+class Piece {
+    constructor(element) {
+        this.element = element
+        this.color = this.element.classList.contains('white') ? 'white' : 'black';
+        this.squareElem = this.element.parentElement
+        this.coords = board.getCoords(this.squareElem)
+        this.type = board.pieceRawType(this.element)
+        this.detailType = board.pieceType(this.element)
     }
-}
+    getValidMoves() {
+        let piecesInPath = [];
+        const neutralMoves = board.getPossibleMoves(this.detailType, this.coords)
+            .filter(possibleCoords => {
+                if (squareBlockedByPieceInPath(possibleCoords, this.coords, piecesInPath)) {
+                    return false;
+                } else {
+                    if (board.pieceOnCoords(possibleCoords)) {
+                        piecesInPath.push(possibleCoords)
+                        return false;
+                    }
+                    return true;
+                }
+            });
 
-export { getValidMoves, pieceRawType }
+        // Pawn moves aren't the same as pawn attacks, so we need to determine the attacks separately
+        if (this.type === 'pawn') {
+            piecesInPath = board.getPossiblePawnAttacks(this.detailType, this.coords);
+        }
+
+        return {
+            neutralMoves: neutralMoves,
+            attackMoves: piecesInPath.filter(possibleAttack => board.pieceOnCoords(possibleAttack).color !== this.color)
+        }
+    }
+    move(nextSquare) {
+        this.squareElem = nextSquare;
+        board.state[this.coords].piece = undefined;
+        this.coords = board.getCoords(nextSquare);
+        board.state[this.coords].piece = this
+
+        if (this.detailType.includes('pawn_first')) {
+            this.detailType = this.detailType.replace('_first', '')
+        }
+    }
+};
+
+export { Piece as default }

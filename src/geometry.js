@@ -1,5 +1,4 @@
-import { validCoords, pieceOnCoords, playerColor, getCoords } from './index'
-
+const distance = (p1, p2) => Math.max(Math.abs(p1[0] - p2[0]), Math.abs(p1[1] - p2[1]));
 const twoPointsOnHorizontal = (p1, p2) => p1[1] === p2[1] ? true : false;
 const twoPointsOnVertical = (p1, p2) => p1[0] === p2[0] ? true : false;
 const twoPointsOnDiagonal = (p1, p2) => (Math.abs(p1[0] - p2[0]) === Math.abs(p1[1] - p2[1])) ? true : false;
@@ -26,34 +25,6 @@ const arrayAdd = (arr1, arr2) => {
         sum[i] = arr1[i] + arr2[i];
     }
     return sum;
-}
-
-const pieceRawType = piece => {
-    const classArray = [...piece.classList];
-    const pieceTypeClass = classArray.filter(cl => cl.includes('fa-chess'))[0];
-    return pieceTypeClass.split('-')[2];
-}
-
-const pieceType = piece => {
-    const rawType = pieceRawType(piece);
-    if (rawType === 'pawn') {
-        const isWhite = piece.classList.contains('white');
-        if ((isWhite && playerColor === 'white') || (!isWhite && playerColor === 'black')) {
-            if (getCoords(piece.parentElement)[1] === 6) {
-                return 'bottom_pawn_first'
-            } else {
-                return 'bottom_pawn'
-            }
-        } else {
-            if (getCoords(piece.parentElement)[1] === 1) {
-                return 'top_pawn_first'
-            } else {
-                return 'top_pawn'
-            }
-        }
-    } else {
-        return rawType;
-    }
 }
 
 const moveDeltas = {
@@ -90,22 +61,9 @@ const moveDeltas = {
 }
 moveDeltas['queen'] = moveDeltas['rook'].concat(moveDeltas['bishop']);
 
-const distance = (p1, p2) => Math.max(Math.abs(p1[0] - p2[0]), Math.abs(p1[1] - p2[1]));
-const getPossibleMoves = (detailTypeOfPiece, currentCoords) => {
-    return moveDeltas[detailTypeOfPiece]
-        .map(delta => arrayAdd(currentCoords, delta))
-        .filter(validCoords)
-        .sort((a, b) => distance(currentCoords, a) - distance(currentCoords, b))
-}
-
 const pawnAttacks = {
     bottom_pawn: [[-1, -1], [1, -1]], top_pawn: [[-1, 1], [1, 1]],
     bottom_pawn_first: [[-1, -1], [1, -1]], top_pawn_first: [[-1, 1], [1, 1]]
 }
 
-const getPossiblePawnAttacks = (detailTypeOfPiece, currentCoords) => {
-    return pawnAttacks[detailTypeOfPiece]
-        .map(delta => arrayAdd(currentCoords, delta)).filter(validCoords).filter(pieceOnCoords);
-}
-
-export { squareBlockedByPieceInPath, pieceRawType, pieceType, getPossibleMoves, getPossiblePawnAttacks }
+export { squareBlockedByPieceInPath, distance, arrayAdd, moveDeltas, pawnAttacks }
