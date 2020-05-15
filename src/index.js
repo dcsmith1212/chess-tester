@@ -97,7 +97,7 @@ window.addEventListener('click', e => {
         // Activate piece and get its valid moves
         const moves = board.activatePiece(e.target);
         moves.neutralMoves.forEach(coords => board.getSquare(coords).classList.add('possible-move'));
-        moves.attackMoves.forEach(coords => board.getSquare(coords).squareElem.classList.add('possible-attack'));
+        moves.attackMoves.forEach(coords => board.getSquare(coords).classList.add('possible-attack'));
     }
 })
 
