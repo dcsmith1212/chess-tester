@@ -79,8 +79,8 @@ window.addEventListener('click', e => {
                 board.takePiece(existingPiece);
                 updateTakenPiecesElements();
             }
-            board.moveActivePiece(nextSquare);
 
+            board.moveActivePiece(nextSquare);
             nextSquare.innerHTML = board.activePiece.element.outerHTML;
             turnIndicator.style.background = board.currentColor;
         }

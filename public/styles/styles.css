@@ -8,11 +8,13 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background-color: #333;
+    height: 100vh;
+    width: 100vw;
 }
 
 .game-container {
     display: flex;
-    margin-top: 50px;
     background: rgb(117, 100, 78);
     padding: 10px 20px;
     position: relative;
@@ -51,6 +53,10 @@ body {
 
 .taken-piece.white {
     color: #fff;
+}
+
+.piece.turn {
+    cursor: pointer;
 }
 
 .taken-piece span {

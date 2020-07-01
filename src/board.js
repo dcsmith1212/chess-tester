@@ -14,8 +14,8 @@ class Board {
     }
     associateCoordsAndElems(coords, squareElem, piece) {
         this.state[coords] = {
-            squareElem: squareElem,
-            piece: piece
+            squareElem,
+            piece
         }
     }
     activatePiece(pieceElem) {
@@ -25,6 +25,9 @@ class Board {
     }
     toggleActiveColor() {
         this.currentColor = this.currentColor === 'white' ? 'black' : 'white';
+        Object.values(this.state).forEach(square => {
+            if (square.piece) square.piece.element.classList.toggle('turn');
+        });
     }
     validCoords(coords) {
         return (0 <= coords[0] && coords[0] <= this.width - 1 &&
