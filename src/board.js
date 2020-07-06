@@ -6,7 +6,8 @@ class Board {
         this.state = {};
         this.activePiece;
         this.playerColor = playerColor
-        this.currentColor = 'white'
+        this.currentColor = 'white',
+        this.inactiveColor = 'black',
         this.takenPieces = {
             white: {},
             black: {}
@@ -23,11 +24,25 @@ class Board {
         this.activePiece.element.classList.add('active-piece');
         return this.activePiece.getValidMoves();
     }
+    getPossibleDrops(pieceElem) {
+        this.activePiece = this.takenPieces[this.inactiveColor][this.pieceRawType(pieceElem)][0]
+        this.activePiece.element.classList.add('active-piece');
+        return Object.entries(this.state).filter(entry => {
+                    return !entry[1].piece;
+                }).map(entry => entry[0].split(',').map(x => +x)).filter(coords => {
+                    if (this.pieceRawType(pieceElem) === 'pawn') {
+                        return [0,7].includes(coords[1]) ? false : true;
+                    }
+                    return true;
+                });
+    }
     toggleActiveColor() {
         this.currentColor = this.currentColor === 'white' ? 'black' : 'white';
-        Object.values(this.state).forEach(square => {
-            if (square.piece) square.piece.element.classList.toggle('turn');
-        });
+        this.inactiveColor = this.inactiveColor === 'white' ? 'black' : 'white'
+        // Object.values(this.state).forEach(square => {
+        //     if (square.piece) square.piece.element.classList.toggle('turn');
+        // });
+
     }
     validCoords(coords) {
         return (0 <= coords[0] && coords[0] <= this.width - 1 &&
@@ -50,10 +65,19 @@ class Board {
         this.checkPawnPromotion(square);
         this.toggleActiveColor();
     }
+    dropActivePiece(square) {
+        this.activePiece.drop(square);
+        this.toggleActiveColor();
+    }
     takePiece(piece) {
         const color = piece.color;
         const type = piece.type;
-        this.takenPieces[color][type] = ++this.takenPieces[color][type] || 1;
+        if (this.takenPieces[color][type]) {
+            this.takenPieces[color][type].push(piece);
+        } else {
+            this.takenPieces[color][type] = [piece];
+        }
+        piece.taken = true;
     }
     pieceRawType(piece) {
         const pieceTypeClass = [...piece.classList].filter(cl => cl.includes('fa-chess'))[0];

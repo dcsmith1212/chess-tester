@@ -9,6 +9,7 @@ class Piece {
         this.coords = board.getCoords(this.squareElem)
         this.type = board.pieceRawType(this.element)
         this.detailType = board.pieceType(this.element)
+        this.taken = false
     }
     getValidMoves() {
         let piecesInPath = [];
@@ -38,12 +39,17 @@ class Piece {
     move(nextSquare) {
         this.squareElem = nextSquare;
         board.state[this.coords].piece = undefined;
-        this.coords = board.getCoords(nextSquare);
+        this.coords = board.getCoords(nextSquare)
         board.state[this.coords].piece = this
 
         if (this.detailType.includes('pawn_first')) {
             this.detailType = this.detailType.replace('_first', '')
         }
+    }
+    drop(nextSquare) {
+        this.squareElem = nextSquare;
+        this.coords = board.getCoords(nextSquare);
+        board.state[this.coords].piece = this;
     }
 };
 
